@@ -11,6 +11,7 @@ export async function getPost(id: number) {
     await prisma.$disconnect();
   }
 }
+
 export async function updatePost(
   id: number,
   data: {

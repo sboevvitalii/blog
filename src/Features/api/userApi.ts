@@ -1,4 +1,57 @@
 import prisma from "./prisma";
+import bcrypt from "bcrypt";
+
+interface CreateUserInput {
+  login: string;
+  password: string;
+  roleId?: number;
+}
+
+export async function createUser({
+  login,
+  password,
+  roleId = 2,
+}: CreateUserInput) {
+  if (!login || !password) {
+    throw new Error("Логин и пароль обязательны");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Пароль должен содержать минимум 8 символов");
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const createdUser = await prisma.user.create({
+      data: {
+        login,
+        password: hashedPassword,
+        roleId,
+        registeredAt: new Date(),
+      },
+      select: {
+        id: true,
+        login: true,
+        registeredAt: true,
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return createdUser;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Пользователь с таким логином уже существует");
+    }
+    console.error("Ошибка при создании пользователя:", error);
+    throw new Error("Не удалось создать пользователя");
+  }
+}
 
 export async function getUser(login: string) {
   try {
