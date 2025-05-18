@@ -1,4 +1,4 @@
-import prisma from "./prisma";
+import prisma from "../api/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -16,12 +16,10 @@ export async function loginUser(
   password: string
 ): Promise<AuthResponse> {
   try {
-    // 1. Валидация входных данных
     if (!login || !password) {
       throw new Error("Логин и пароль обязательны");
     }
 
-    // 2. Поиск пользователя
     const user = await prisma.user.findUnique({
       where: { login },
       include: { role: true },
@@ -31,20 +29,17 @@ export async function loginUser(
       throw new Error("Пользователь не найден");
     }
 
-    // 3. Проверка пароля
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new Error("Неверный пароль");
     }
 
-    // 4. Генерация JWT-токена
     const token = jwt.sign(
       { userId: user.id, role: user.role.name },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // 5. Возвращаем данные пользователя (без пароля) и токен
     return {
       user: {
         id: user.id,
@@ -54,22 +49,16 @@ export async function loginUser(
       token,
     };
   } catch (error: unknown) {
-    // 6. Обработка ошибок
     if (error instanceof Error) {
-      throw error; // Пробрасываем наши кастомные ошибки
+      throw error;
     }
     console.error("Ошибка авторизации:", error);
     throw new Error("Произошла ошибка при авторизации");
   }
 }
 
-export function authMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function authMiddleware(req: Request, res: Response) {
   try {
-    // 1. Получаем токен из заголовков
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
