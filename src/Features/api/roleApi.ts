@@ -1,9 +1,9 @@
 import prisma from "./prisma";
 
-export async function getPost(id: number) {
+export async function getRole(id: number) {
   try {
-    const post = await prisma.post.findUnique({ where: { id } });
-    return post;
+    const role = await prisma.role.findUnique({ where: { id } });
+    return role;
   } catch (error) {
     console.error("Ошибка при полчуении поста");
     throw error;
@@ -12,31 +12,24 @@ export async function getPost(id: number) {
   }
 }
 
-export async function updatePost(
-  id: number,
-  data: {
-    title: string;
-    imageUrl: string;
-    content: string;
-    comments?: Array<{
-      id?: number;
-      content?: string;
-    }>;
-  }
-) {
+export async function updateRole(id: number, name: string) {
   try {
-    const updatedPost = await prisma.post.update({
+    const existingRole = await prisma.role.findUnique({
+      where: { id },
+    });
+
+    if (!existingRole) {
+      throw new Error(`Роль с ID ${id} не найдена`);
+    }
+    const updatedRole = await prisma.role.update({
       where: { id },
       data: {
-        title: data.title,
-        imageUrl: data.imageUrl,
-        content: data.content,
+        name,
       },
-      include: { comments: true },
     });
-    return updatedPost;
+    return updatedRole;
   } catch (error) {
-    console.error("Ошибка при обновлении поста");
+    console.error("Ошибка при обновлении роли:", error);
     throw error;
   } finally {
     await prisma.$disconnect();
